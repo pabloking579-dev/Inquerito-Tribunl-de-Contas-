@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard - Tribunal de Contas STP</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            navy: "#002b5e",
+            gold: "#c5a059",
+            emerald: "#00724b",
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    .card-hover {
+      transition: all 0.3s ease;
+    }
+    .card-hover:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(0,43,94,0.15);
+    }
+    .chart-container {
+      position: relative;
+      height: 300px;
+      width: 100%;
+    }
+    @media (min-width: 768px) {
+      .chart-container {
+        height: 400px;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-navy text-white shadow-lg sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div class="h-12 w-12 rounded-xl bg-gold flex items-center justify-center">
+            <i class="fa-solid fa-chart-simple text-navy text-xl"></i>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold">Dashboard de Resultados</h1>
+            <p class="text-sm text-slate-300">Tribunal de Contas de São Tomé e Príncipe</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <button onclick="carregarDashboard()" class="px-4 py-2 bg-emerald hover:bg-emerald/90 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+            <i class="fa-solid fa-rotate"></i> Atualizar
+          </button>
+          <a href="/" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition-colors">
+            <i class="fa-solid fa-arrow-left mr-2"></i>Voltar
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-8">
+    
+    <!-- Loading -->
+    <div id="loading" class="text-center py-20">
+      <i class="fa-solid fa-circle-notch fa-spin text-4xl text-navy mb-4"></i>
+      <p class="text-slate-600">Carregando dados do dashboard...</p>
+    </div>
+
+    <!-- Conteúdo Principal (oculto até carregar) -->
+    <div id="dashboard-content" class="hidden space-y-8">
+      
+      <!-- Cards de Estatísticas -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="card-hover bg-white rounded-2xl p-6 shadow-md border border-slate-100">
+          <div class="flex items-center justify-between mb-4">
+            <div class="h-12 w-12 rounded-full bg-navy/10 flex items-center justify-center">
+              <i class="fa-solid fa-clipboard-list text-navy text-xl"></i>
+            </div>
+            <span class="text-xs font-medium text-emerald bg-emerald/10 px-2 py-1 rounded-full">+12%</span>
+          </div>
+          <p class="text-3xl font-bold text-navy" id="stat-total-questionarios">0</p>
+          <p class="text-sm text-slate-500 mt-1">Questionários Ativos</p>
+        </div>
+
+        <div class="card-hover bg-white rounded-2xl p-6 shadow-md border border-slate-100">
+          <div class="flex items-center justify-between mb-4">
+            <div class="h-12 w-12 rounded-full bg-emerald/10 flex items-center justify-center">
+              <i class="fa-solid fa-circle-check text-emerald text-xl"></i>
+            </div>
+            <span class="text-xs font-medium text-emerald bg-emerald/10 px-2 py-1 rounded-full">Em tempo real</span>
+          </div>
+          <p class="text-3xl font-bold text-navy" id="stat-total-respostas">0</p>
+          <p class="text-sm text-slate-500 mt-1">Respostas Recebidas</p>
+        </div>
+
+        <div class="card-hover bg-white rounded-2xl p-6 shadow-md border border-slate-100">
+          <div class="flex items-center justify-between mb-4">
+            <div class="h-12 w-12 rounded-full bg-gold/10 flex items-center justify-center">
+              <i class="fa-solid fa-users text-gold text-xl"></i>
+            </div>
+          </div>
+          <p class="text-3xl font-bold text-navy" id="stat-usuarios-unicos">0</p>
+          <p class="text-sm text-slate-500 mt-1">Participantes Únicos</p>
+        </div>
+
+        <div class="card-hover bg-white rounded-2xl p-6 shadow-md border border-slate-100">
+          <div class="flex items-center justify-between mb-4">
+            <div class="h-12 w-12 rounded-full bg-purple/10 flex items-center justify-center">
+              <i class="fa-solid fa-percent text-purple-600 text-xl"></i>
+            </div>
+          </div>
+          <p class="text-3xl font-bold text-navy" id="stat-media-respostas">0</p>
+          <p class="text-sm text-slate-500 mt-1">Média por Questionário</p>
+        </div>
+      </div>
+
+      <!-- Gráficos -->
+      <div class="grid lg:grid-cols-2 gap-6">
+        
+        <!-- Gráfico: Respostas por Dia -->
+        <div class="card-hover bg-white rounded-2xl p-6 shadow-md border border-slate-100">
+          <h3 class="text-lg font-bold text-navy mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-chart-line text-emerald"></i>
+            Respostas por Dia (Últimos 7 dias)
+          </h3>
+          <div class="chart-container">
+            <canvas id="chartRespostasDia"></canvas>
+          </div>
+        </div>
+
+        <!-- Gráfico: Taxa de Resposta por Questionário -->
+        <div class="card-hover bg-white rounded-2xl p-6 shadow-md border border-slate-100">
+          <h3 class="text-lg font-bold text-navy mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-chart-pie text-gold"></i>
+            Taxa de Resposta por Questionário
+          </h3>
+          <div class="chart-container">
+            <canvas id="chartTaxasResposta"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Últimas Respostas -->
+      <div class="card-hover bg-white rounded-2xl p-6 shadow-md border border-slate-100">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-bold text-navy flex items-center gap-2">
+            <i class="fa-solid fa-clock text-emerald"></i>
+            Últimas Respostas
+          </h3>
+          <button class="text-sm text-gold hover:text-gold/80 font-medium">Ver todas</button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-50">
+              <tr>
+                <th class="text-left py-3 px-4 font-semibold text-slate-600">Questionário</th>
+                <th class="text-left py-3 px-4 font-semibold text-slate-600">Usuário</th>
+                <th class="text-left py-3 px-4 font-semibold text-slate-600">Data</th>
+                <th class="text-left py-3 px-4 font-semibold text-slate-600">Progresso</th>
+              </tr>
+            </thead>
+            <tbody id="table-ultimas-respostas">
+              <!-- Preenchido via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Lista de Questionários para Detalhes -->
+      <div class="card-hover bg-white rounded-2xl p-6 shadow-md border border-slate-100">
+        <h3 class="text-lg font-bold text-navy mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-folder-open text-gold"></i>
+          Analisar Questionário Específico
+        </h3>
+        <div id="lista-questionarios" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- Preenchido via JS -->
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Modal de Detalhes do Questionário -->
+  <div id="modal-detalhes" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="sticky top-0 bg-navy text-white px-6 py-4 flex items-center justify-between rounded-t-2xl">
+        <h3 class="text-lg font-bold" id="modal-titulo">Detalhes do Questionário</h3>
+        <button onclick="fecharModal()" class="text-white/80 hover:text-white text-2xl">&times;</button>
+      </div>
+      <div class="p-6 space-y-6" id="modal-conteudo">
+        <!-- Conteúdo carregado dinamicamente -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-navy text-white text-center py-6 mt-12">
+    <p class="text-sm text-slate-300">
+      © <span id="anoAtual"></span> Tribunal de Contas de São Tomé e Príncipe
+    </p>
+  </footer>
+
+  <!-- Scripts -->
+  <script>
+    document.getElementById('anoAtual').textContent = new Date().getFullYear();
+    
+    let charts = {};
+
+    // Carregar dashboard ao iniciar
+    document.addEventListener('DOMContentLoaded', () => {
+      carregarDashboard();
+    });
+
+    async function carregarDashboard() {
+      try {
+        document.getElementById('loading').classList.remove('hidden');
+        document.getElementById('dashboard-content').classList.add('hidden');
+
+        const response = await fetch('/api/dashboard/overview');
+        const result = await response.json();
+
+        if (result.success) {
+          atualizarEstatisticas(result.data.estatisticas);
+          atualizarGraficoRespostasDia(result.data.respostas_por_dia);
+          atualizarGraficoTaxas(result.data.taxas_resposta);
+          atualizarTabelaUltimasRespostas(result.data.ultimas_respostas);
+          await carregarListaQuestionarios();
+          
+          document.getElementById('loading').classList.add('hidden');
+          document.getElementById('dashboard-content').classList.remove('hidden');
+        } else {
+          alert('Erro ao carregar dashboard: ' + result.message);
+        }
+      } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro de conexão com o servidor');
+      }
+    }
+
+    function atualizarEstatisticas(stats) {
+      document.getElementById('stat-total-questionarios').textContent = stats.total_questionarios;
+      document.getElementById('stat-total-respostas').textContent = stats.total_respostas;
+      document.getElementById('stat-usuarios-unicos').textContent = stats.usuarios_unicos;
+      document.getElementById('stat-media-respostas').textContent = stats.media_respostas_por_questionario;
+    }
+
+    function atualizarGraficoRespostasDia(dados) {
+      const ctx = document.getElementById('chartRespostasDia');
+      
+      if (charts.respostasDia) {
+        charts.respostasDia.destroy();
+      }
+
+      const labels = dados.map(d => {
+        const date = new Date(d.data);
+        return date.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' });
+      });
+      const values = dados.map(d => d.total);
+
+      charts.respostasDia = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Respostas',
+             values,
+            borderColor: '#00724b',
+            backgroundColor: 'rgba(0, 114, 75, 0.1)',
+            tension: 0.4,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { stepSize: 1 }
+            }
+          }
+        }
+      });
+    }
+
+    function atualizarGraficoTaxas(taxas) {
+      const ctx = document.getElementById('chartTaxasResposta');
+      
+      if (charts.taxas) {
+        charts.taxas.destroy();
+      }
+
+      const labels = taxas.map(t => t.titulo.length > 20 ? t.titulo.substring(0, 20) + '...' : t.titulo);
+      const data = taxas.map(t => t.taxa_resposta);
+      const cores = ['#00724b', '#c5a059', '#002b5e', '#dc2626', '#8b5cf6'];
+
+      charts.taxas = new Chart(ctx, {
+        type: 'doughnut',
+         {
+          labels: labels,
+          datasets: [{
+             data,
+            backgroundColor: cores.slice(0, taxas.length),
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { padding: 15, usePointStyle: true }
+            }
+          }
+        }
+      });
+    }
+
+    function atualizarTabelaUltimasRespostas(respostas) {
+      const tbody = document.getElementById('table-ultimas-respostas');
+      tbody.innerHTML = '';
+
+      respostas.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.className = 'border-t hover:bg-slate-50';
+        tr.innerHTML = `
+          <td class="py-3 px-4 font-medium text-navy">${r.questionario}</td>
+          <td class="py-3 px-4 text-slate-600">${r.usuario}</td>
+          <td class="py-3 px-4 text-slate-500">${new Date(r.data_resposta).toLocaleDateString('pt-PT')}</td>
+          <td class="py-3 px-4">
+            <span class="bg-emerald/10 text-emerald px-3 py-1 rounded-full text-xs font-medium">
+              ${r.perguntas_respondidas} perguntas
+            </span>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function carregarListaQuestionarios() {
+      try {
+        const response = await fetch('/api/questionarios');
+        const result = await response.json();
+        
+        const container = document.getElementById('lista-questionarios');
+        container.innerHTML = '';
+
+        if (result.success && result.data.questionarios.length > 0) {
+          result.data.questionarios.forEach(q => {
+            const card = document.createElement('div');
+            card.className = 'p-4 border border-slate-200 rounded-xl hover:border-gold hover:shadow-md transition-all cursor-pointer';
+            card.onclick = () => abrirDetalhesQuestionario(q.id);
+            card.innerHTML = `
+              <h4 class="font-semibold text-navy mb-2 line-clamp-2">${q.titulo}</h4>
+              <p class="text-sm text-slate-500 mb-3 line-clamp-2">${q.descricao || 'Sem descrição'}</p>
+              <div class="flex items-center justify-between text-xs">
+                <span class="text-slate-400">${q.total_respostas} respostas</span>
+                <span class="text-gold font-medium">Ver detalhes →</span>
+              </div>
+            `;
+            container.appendChild(card);
+          });
+        } else {
+          container.innerHTML = '<p class="text-slate-500 text-center py-4">Nenhum questionário disponível</p>';
+        }
+      } catch (error) {
+        console.error('Erro ao carregar questionários:', error);
+      }
+    }
+
+    async function abrirDetalhesQuestionario(id) {
+      try {
+        const modal = document.getElementById('modal-detalhes');
+        const conteudo = document.getElementById('modal-conteudo');
+        
+        modal.classList.remove('hidden');
+        conteudo.innerHTML = '<div class="text-center py-8"><i class="fa-solid fa-circle-notch fa-spin text-3xl text-navy"></i><p class="mt-2 text-slate-500">Carregando...</p></div>';
+
+        const response = await fetch(`/api/dashboard/questionario/${id}`);
+        const result = await response.json();
+
+        if (result.success) {
+          renderizarDetalhesQuestionario(result.data, conteudo);
+        } else {
+          conteudo.innerHTML = `<p class="text-red-500 text-center">Erro: ${result.message}</p>`;
+        }
+      } catch (error) {
+        console.error('Erro:', error);
+        document.getElementById('modal-conteudo').innerHTML = '<p class="text-red-500 text-center">Erro de conexão</p>';
+      }
+    }
+
+    function renderizarDetalhesQuestionario(data, container) {
+      const { questionario, perguntas, por_departamento, resumo } = data;
+      
+      let html = `
+        <div class="flex items-start justify-between mb-6">
+          <div>
+            <h4 class="text-xl font-bold text-navy">${questionario.titulo}</h4>
+            <p class="text-sm text-slate-500">${questionario.empresa_nome}</p>
+          </div>
+          <div class="text-right">
+            <p class="text-2xl font-bold text-emerald">${questionario.total_respostas}</p>
+            <p class="text-xs text-slate-500">respostas</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-4 mb-6">
+          <div class="bg-slate-50 rounded-xl p-4 text-center">
+            <p class="text-lg font-bold text-navy">${resumo.total_perguntas}</p>
+            <p class="text-xs text-slate-500">Perguntas</p>
+          </div>
+          <div class="bg-slate-50 rounded-xl p-4 text-center">
+            <p class="text-lg font-bold text-emerald">${resumo.perguntas_respondidas}</p>
+            <p class="text-xs text-slate-500">Com Respostas</p>
+          </div>
+          <div class="bg-slate-50 rounded-xl p-4 text-center">
+            <p class="text-lg font-bold text-gold">${resumo.taxa_conclusao_media}%</p>
+            <p class="text-xs text-slate-500">Taxa de Conclusão</p>
+          </div>
+        </div>
+      `;
+
+      // Gráfico por Departamento (se houver dados)
+      if (por_departamento.length > 0) {
+        html += `
+          <div class="mb-6">
+            <h5 class="font-semibold text-navy mb-3">Respostas por Departamento</h5>
+            <div class="h-48">
+              <canvas id="chartDepartamentos"></canvas>
+            </div>
+          </div>
+        `;
+      }
+
+      // Lista de Perguntas com Estatísticas
+      html += '<h5 class="font-semibold text-navy mb-3">Análise por Pergunta</h5><div class="space-y-4">';
+
+      perguntas.forEach((p, index) => {
+        html += `
+          <div class="border border-slate-200 rounded-xl p-4">
+            <div class="flex items-start justify-between mb-3">
+              <div class="flex-1">
+                <span class="text-xs font-medium text-slate-400">P${index + 1} • ${p.tipo.toUpperCase()}</span>
+                <p class="font-medium text-navy mt-1">${p.enunciado}</p>
+              </div>
+              <span class="bg-emerald/10 text-emerald px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ml-4">
+                ${p.total_respostas} respostas
+              </span>
+            </div>
+        `;
+
+        if (p.tipo === 'texto') {
+          // Respostas de texto
+          if (p.respostas_texto && p.respostas_texto.length > 0) {
+            html += '<div class="space-y-2 max-h-32 overflow-y-auto">';
+            p.respostas_texto.slice(0, 5).forEach(r => {
+              html += `
+                <div class="bg-slate-50 rounded-lg p-3 text-sm">
+                  <p class="text-slate-700">${r.valor_texto}</p>
+                  <p class="text-xs text-slate-400 mt-1">${r.usuario_nome || 'Anônimo'} • ${new Date(r.data_resposta).toLocaleDateString('pt-PT')}</p>
+                </div>
+              `;
+            });
+            html += '</div>';
+          } else {
+            html += '<p class="text-sm text-slate-400 italic">Nenhuma resposta registrada</p>';
+          }
+        } else {
+          // Gráfico de barras para radio/checkbox/select
+          const total = p.opcoes.reduce((sum, o) => sum + o.qtd_respostas, 0);
+          if (total > 0) {
+            html += '<div class="space-y-2">';
+            p.opcoes.forEach(op => {
+              const percent = ((op.qtd_respostas / total) * 100).toFixed(1);
+              html += `
+                <div>
+                  <div class="flex justify-between text-xs mb-1">
+                    <span class="text-slate-600">${op.texto_opcao}</span>
+                    <span class="font-medium text-navy">${op.qtd_respostas} (${percent}%)</span>
+                  </div>
+                  <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-emerald to-emerald-600 rounded-full" style="width: ${percent}%"></div>
+                  </div>
+                </div>
+              `;
+            });
+            html += '</div>';
+          } else {
+            html += '<p class="text-sm text-slate-400 italic">Nenhuma resposta registrada</p>';
+          }
+        }
+
+        html += '</div>';
+      });
+
+      html += '</div>';
+
+      // Botão de Exportar
+      html += `
+        <div class="flex justify-end gap-3 pt-4 border-t">
+          <button onclick="fecharModal()" class="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
+            Fechar
+          </button>
+          <button onclick="exportarQuestionario(${questionario.id})" class="px-4 py-2 bg-gold text-navy rounded-lg text-sm font-bold hover:bg-gold/90 transition-colors flex items-center gap-2">
+            <i class="fa-solid fa-download"></i> Exportar Dados
+          </button>
+        </div>
+      `;
+
+      container.innerHTML = html;
+
+      // Renderizar gráfico de departamentos se existir
+      if (por_departamento.length > 0 && document.getElementById('chartDepartamentos')) {
+        renderizarGraficoDepartamentos(por_departamento);
+      }
+    }
+
+    function renderizarGraficoDepartamentos(dados) {
+      const ctx = document.getElementById('chartDepartamentos');
+      
+      new Chart(ctx, {
+        type: 'bar',
+         {
+          labels: dados.map(d => d.departamento),
+          datasets: [{
+            label: 'Respostas',
+             dados.map(d => d.respostas),
+            backgroundColor: '#00724b',
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, ticks: { stepSize: 1 } }
+          }
+        }
+      });
+    }
+
+    async function exportarQuestionario(id) {
+      try {
+        const response = await fetch(`/api/dashboard/export/${id}`);
+        const result = await response.json();
+        
+        if (result.success) {
+          // Criar download do JSON
+          const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `resultados-questionario-${id}-${new Date().toISOString().split('T')[0]}.json`;
+          a.click();
+          URL.revokeObjectURL(url);
+          
+          alert('✅ Exportação concluída!');
+        } else {
+          alert('Erro ao exportar: ' + result.message);
+        }
+      } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao exportar dados');
+      }
+    }
+
+    function fecharModal() {
+      document.getElementById('modal-detalhes').classList.add('hidden');
+      // Limpar gráficos do modal para evitar vazamento de memória
+      const canvas = document.getElementById('chartDepartamentos');
+      if (canvas && charts.departamentos) {
+        charts.departamentos.destroy();
+        delete charts.departamentos;
+      }
+    }
+
+    // Fechar modal ao clicar fora
+    document.getElementById('modal-detalhes').addEventListener('click', (e) => {
+      if (e.target.id === 'modal-detalhes') {
+        fecharModal();
+      }
+    });
+  </script>
+</body>
+</html>

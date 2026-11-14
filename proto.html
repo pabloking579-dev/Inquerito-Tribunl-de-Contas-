@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inquerito de Conformidade - Tribunal de Contas</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        :root {
+            --primary: #0b3b5c;
+            --primary-dark: #0a3550;
+            --primary-light: rgba(11, 59, 92, 0.05);
+            --primary-10: rgba(11, 59, 92, 0.1);
+            --emerald: #10b981;
+            --emerald-light: #d1fae5;
+            --amber: #f59e0b;
+            --amber-light: #fef3c7;
+            --red: #ef4444;
+            --red-light: #fee2e2;
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-300: #cbd5e1;
+            --slate-400: #94a3b8;
+            --slate-500: #64748b;
+            --slate-600: #475569;
+            --slate-700: #334155;
+            --slate-800: #1e293b;
+            --white: #ffffff;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--slate-50);
+            color: var(--slate-800);
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+        
+        .hidden { display: none !important; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .animate-fade-in { animation: fadeIn 0.2s ease-out; }
+        .animate-slide-up { animation: slideUp 0.3s ease-out; }
+        
+        /* Modal */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(4px);
+            z-index: 50;
+            display: flex; align-items: center; justify-content: center;
+            padding: 1rem;
+        }
+        
+        .modal-content {
+            background: var(--white);
+            border-radius: 1rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            max-width: 26rem; width: 100%;
+            overflow: hidden;
+            animation: slideUp 0.2s ease-out;
+        }
+        
+        .modal-header {
+            background: var(--primary);
+            padding: 1.25rem 1.5rem;
+            display: flex; align-items: center; gap: 1rem;
+        }
+        
+        .modal-icon {
+            width: 2.75rem; height: 2.75rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 0.625rem;
+            display: flex; align-items: center; justify-content: center;
+        }
+        
+        .modal-icon svg { width: 1.25rem; height: 1.25rem; color: var(--white); }
+        
+        .modal-title-group small {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.625rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .modal-title-group h2 { color: var(--white); font-size: 1.125rem; font-weight: 600; }
+        
+        .modal-body { padding: 1.5rem; }
+        
+        .inquiry-info {
+            display: flex; align-items: flex-start; gap: 0.75rem;
+            padding: 0.875rem; background: var(--slate-50);
+            border-radius: 0.625rem; margin-bottom: 1rem;
+        }
+        
+        .inquiry-info svg { width: 1.125rem; height: 1.125rem; color: var(--primary); flex-shrink: 0; margin-top: 0.125rem; }
+        .inquiry-info h3 { font-weight: 500; color: var(--slate-800); font-size: 0.875rem; }
+        .inquiry-info p { color: var(--slate-500); font-size: 0.75rem; margin-top: 0.125rem; }
+        
+        .stats-row { display: flex; gap: 0.625rem; margin-bottom: 1rem; }
+        
+        .stat-item {
+            flex: 1; padding: 0.625rem;
+            background: var(--slate-50);
+            border-radius: 0.5rem; text-align: center;
+        }
+        
+        .stat-item svg { width: 0.875rem; height: 0.875rem; color: var(--slate-400); margin: 0 auto 0.25rem; display: block; }
+        .stat-item .label { font-size: 0.625rem; color: var(--slate-500); }
+        .stat-item .value { font-size: 0.8125rem; font-weight: 500; color: var(--slate-800); }
+        
+        .draft-notice {
+            display: flex; align-items: center; gap: 0.625rem;
+            padding: 0.625rem 0.75rem;
+            background: var(--amber-light);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            border-radius: 0.5rem; margin-bottom: 1rem;
+        }
+        
+        .draft-notice svg { width: 0.875rem; height: 0.875rem; color: var(--amber); }
+        .draft-notice p { font-size: 0.75rem; font-weight: 500; color: #b45309; }
+        
+        .modal-actions { display: flex; flex-direction: column; gap: 0.5rem; }
+        
+        /* Buttons */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+            padding: 0.6875rem 1rem; border-radius: 0.5rem;
+            font-weight: 500; font-size: 0.8125rem;
+            cursor: pointer; transition: all 0.15s ease;
+            border: none; width: 100%;
+        }
+        
+        .btn svg { width: 0.9375rem; height: 0.9375rem; }
+        
+        .btn-primary { background: var(--primary); color: var(--white); }
+        .btn-primary:hover { background: var(--primary-dark); }
+        
+        .btn-secondary { background: var(--white); color: var(--slate-700); border: 1px solid var(--slate-200); }
+        .btn-secondary:hover { background: var(--slate-50); border-color: var(--slate-300); }
+        
+        .btn-ghost { background: transparent; color: var(--slate-500); }
+        .btn-ghost:hover { background: var(--slate-50); }
+        
+        .btn-success { background: var(--emerald); color: var(--white); }
+        .btn-success:hover { background: #059669; }
+        
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-inline { width: auto; }
+        
+        /* Loading */
+        .loading-overlay {
+            position: fixed; inset: 0;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(4px);
+            z-index: 50;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 1rem;
+        }
+        
+        .spinner {
+            width: 2.5rem; height: 2.5rem;
+            border: 3px solid var(--slate-200);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        .spinner-sm { width: 0.75rem; height: 0.75rem; border-width: 2px; }
+        .loading-text { color: var(--slate-600); font-weight: 500; font-size: 0.875rem; }
+        
+        /* Toast */
+        .toast {
+            position: fixed; bottom: 1.25rem; right: 1.25rem; z-index: 50;
+            background: var(--slate-800); color: var(--white);
+            padding: 0.625rem 1rem; border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            display: flex; align-items: center; gap: 0.5rem;
+            font-size: 0.8125rem;
+            animation: slideUp 0.2s ease-out;
+        }
+        
+        .toast svg { width: 0.875rem; height: 0.875rem; color: var(--emerald); }
+        
+        /* Dashboard */
+        .dashboard-header {
+            background: var(--white);
+            border-bottom: 1px solid var(--slate-200);
+        }
+        
+        .dashboard-header-content {
+            max-width: 56rem; margin: 0 auto;
+            padding: 0.875rem 1.25rem;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        
+        .logo-group { display: flex; align-items: center; gap: 0.625rem; }
+        
+        .logo-icon {
+            width: 2.25rem; height: 2.25rem;
+            background: var(--primary); border-radius: 0.5rem;
+            display: flex; align-items: center; justify-content: center;
+        }
+        
+        .logo-icon svg { width: 1.125rem; height: 1.125rem; color: var(--white); }
+        .logo-text h1 { font-weight: 600; color: var(--slate-800); font-size: 0.8125rem; }
+        .logo-text p { font-size: 0.6875rem; color: var(--slate-500); }
+        
+        .notification-btn {
+            position: relative; padding: 0.5rem;
+            border-radius: 0.5rem; background: transparent;
+            border: none; cursor: pointer;
+            transition: background 0.15s ease;
+        }
+        
+        .notification-btn:hover { background: var(--slate-100); }
+        .notification-btn svg { width: 1.125rem; height: 1.125rem; color: var(--slate-500); }
+        
+        .notification-badge {
+            position: absolute; top: 0.375rem; right: 0.375rem;
+            width: 0.4375rem; height: 0.4375rem;
+            background: var(--red); border-radius: 50%;
+        }
+        
+        .dashboard-main { max-width: 56rem; margin: 0 auto; padding: 1.5rem 1.25rem; }
+        
+        .welcome-section { margin-bottom: 1.5rem; }
+        .welcome-section h2 { font-size: 1.375rem; font-weight: 600; color: var(--slate-800); margin-bottom: 0.125rem; }
+        .welcome-section p { color: var(--slate-500); font-size: 0.875rem; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; }
+        
+        .stat-card { background: var(--white); padding: 1rem; border-radius: 0.625rem; border: 1px solid var(--slate-200); }
+        .stat-card-header { display: flex; align-items: center; gap: 0.625rem; margin-bottom: 0.5rem; }
+        
+        .stat-card-icon {
+            width: 2rem; height: 2rem; border-radius: 0.5rem;
+            display: flex; align-items: center; justify-content: center;
+        }
+        
+        .stat-card-icon.amber { background: var(--amber-light); }
+        .stat-card-icon.amber svg { color: var(--amber); }
+        .stat-card-icon.blue { background: rgba(59, 130, 246, 0.1); }
+        .stat-card-icon.blue svg { color: #3b82f6; }
+        .stat-card-icon.emerald { background: var(--emerald-light); }
+        .stat-card-icon.emerald svg { color: var(--emerald); }
+        .stat-card-icon svg { width: 0.875rem; height: 0.875rem; }
+        
+        .stat-card-value { font-size: 1.25rem; font-weight: 600; color: var(--slate-800); }
+        .stat-card-label { font-size: 0.8125rem; color: var(--slate-500); }
+        
+        .inquiries-card { background: var(--white); border-radius: 0.625rem; border: 1px solid var(--slate-200); overflow: hidden; }
+        .inquiries-header { padding: 0.875rem 1rem; border-bottom: 1px solid var(--slate-100); }
+        .inquiries-header h3 { font-weight: 500; color: var(--slate-800); font-size: 0.8125rem; }
+        .inquiries-list { padding: 1rem; }
+        
+        .inquiry-item {
+            padding: 0.875rem; border-radius: 0.5rem;
+            border: 1px solid var(--slate-200);
+            cursor: pointer; transition: all 0.15s ease;
+        }
+        
+        .inquiry-item:hover { border-color: var(--slate-300); background: rgba(248, 250, 252, 0.5); }
+        .inquiry-item-content { display: flex; align-items: center; justify-content: space-between; }
+        .inquiry-item-left { display: flex; align-items: center; gap: 0.875rem; }
+        
+        .inquiry-item-icon {
+            width: 2.25rem; height: 2.25rem;
+            background: var(--slate-100); border-radius: 0.5rem;
+            display: flex; align-items: center; justify-content: center;
+        }
+        
+        .inquiry-item-icon svg { width: 1.125rem; height: 1.125rem; color: var(--slate-500); }
+        .inquiry-item-info h4 { font-weight: 500; color: var(--slate-800); font-size: 0.8125rem; }
+        .inquiry-item-meta { display: flex; align-items: center; gap: 0.875rem; margin-top: 0.25rem; }
+        .inquiry-item-meta span { font-size: 0.6875rem; color: var(--slate-400); display: flex; align-items: center; gap: 0.25rem; }
+        .inquiry-item-meta span svg { width: 0.6875rem; height: 0.6875rem; }
+        
+        .draft-badge {
+            font-size: 0.6875rem; color: #b45309;
+            background: var(--amber-light);
+            padding: 0.125rem 0.5rem; border-radius: 0.25rem;
+        }
+        
+        .inquiry-item-arrow svg { width: 1.125rem; height: 1.125rem; color: var(--slate-400); }
+        
+        /* App Layout */
+        .app-layout { display: flex; min-height: 100vh; }
+        
+        /* Sidebar */
+        .sidebar {
+            position: fixed; top: 0; left: 0;
+            width: 16rem; height: 100vh;
+            background: var(--white);
+            border-right: 1px solid var(--slate-200);
+            z-index: 40;
+            display: flex; flex-direction: column;
+            transform: translateX(0);
+            transition: transform 0.2s ease;
+        }
+        
+        .sidebar.hidden-mobile { transform: translateX(-100%); }
+        
+        @media (min-width: 1024px) {
+            .sidebar { position: sticky; transform: translateX(0) !important; }
+        }
+        
+        .sidebar-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.3); z-index: 30; }
+        @media (min-width: 1024px) { .sidebar-overlay { display: none !important; } }
+        
+        .sidebar-header { padding: 1rem; border-bottom: 1px solid var(--slate-100); }
+        .sidebar-logo { display: flex; align-items: center; gap: 0.625rem; }
+        
+        .sidebar-logo-icon {
+            width: 2rem; height: 2rem;
+            background: var(--primary); border-radius: 0.5rem;
+            display: flex; align-items: center; justify-content: center;
+        }
+        
+        .sidebar-logo-icon svg { width: 0.875rem; height: 0.875rem; color: var(--white); }
+        .sidebar-logo-text p { font-weight: 600; color: var(--slate-800); font-size: 0.8125rem; }
+        .sidebar-logo-text span { font-size: 0.5625rem; color: var(--slate-400); }
+        
+        .sidebar-progress { padding: 1rem; border-bottom: 1px solid var(--slate-100); }
+        .progress-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.625rem; }
+        .progress-label { font-size: 0.6875rem; font-weight: 500; color: var(--slate-500); }
+        .progress-value { font-size: 0.8125rem; font-weight: 600; color: var(--primary); }
+        .progress-bar { height: 0.375rem; background: var(--slate-100); border-radius: 9999px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--primary); border-radius: 9999px; transition: width 0.5s ease; }
+        
+        .sidebar-steps { flex: 1; padding: 1rem; overflow-y: auto; }
+        .steps-title { font-size: 0.5625rem; font-weight: 600; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.875rem; }
+        .steps-container { position: relative; }
+        .steps-line { position: absolute; left: 1.125rem; top: 0; bottom: 0; width: 1px; background: var(--slate-200); }
+        .steps-line-progress { position: absolute; left: 1.125rem; top: 0; width: 1px; background: var(--primary); transition: height 0.5s ease; }
+        
+        .step-item {
+            position: relative; display: flex; align-items: center; gap: 0.875rem;
+            padding: 0.625rem; border-radius: 0.5rem;
+            cursor: pointer; transition: all 0.15s ease;
+            background: transparent; border: none; width: 100%; text-align: left;
+        }
+        
+        .step-item.active { background: var(--primary-light); }
+        .step-item.complete:hover, .step-item.active:hover { background: var(--slate-50); }
+        .step-item.disabled { opacity: 0.4; cursor: not-allowed; }
+        
+        .step-number {
+            position: relative; z-index: 10;
+            width: 2.25rem; height: 2.25rem; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.8125rem; font-weight: 600;
+            transition: all 0.15s ease; flex-shrink: 0;
+        }
+        
+        .step-number.pending { background: var(--slate-100); color: var(--slate-400); }
+        .step-number.active { background: var(--primary); color: var(--white); }
+        .step-number.complete { background: var(--emerald); color: var(--white); }
+        .step-number svg { width: 0.875rem; height: 0.875rem; }
+        
+        .step-info { flex: 1; min-width: 0; }
+        .step-name { font-size: 0.8125rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .step-name.active { color: var(--primary); }
+        .step-name.complete { color: var(--slate-700); }
+        .step-name.pending { color: var(--slate-400); }
+        .step-description { font-size: 0.5625rem; color: var(--slate-400); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .step-indicator { width: 0.1875rem; height: 1.25rem; background: var(--primary); border-radius: 9999px; }
+        
+        .sidebar-footer { padding: 0.875rem; border-top: 1px solid var(--slate-100); }
+        .save-status { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.625rem; font-size: 0.6875rem; color: var(--slate-400); }
+        .save-status-content { display: flex; align-items: center; gap: 0.375rem; }
+        .save-status svg { width: 0.6875rem; height: 0.6875rem; }
+        .save-status svg.success { color: var(--emerald); }
+        .footer-buttons { display: flex; gap: 0.5rem; }
+        .footer-buttons .btn { padding: 0.4375rem 0.625rem; font-size: 0.6875rem; }
+        
+        .btn-discard {
+            padding: 0.4375rem 0.625rem; background: transparent;
+            border: none; border-radius: 0.5rem;
+            cursor: pointer; transition: background 0.15s ease;
+        }
+        
+        .btn-discard:hover { background: var(--red-light); }
+        .btn-discard svg { width: 0.8125rem; height: 0.8125rem; color: var(--red); }
+        
+        /* Main Content */
+        .main-content { flex: 1; min-width: 0; }
+        
+        .main-header {
+            background: var(--white);
+            border-bottom: 1px solid var(--slate-200);
+            position: sticky; top: 0; z-index: 20;
+            padding: 0.875rem 1.25rem;
+        }
+        
+        .main-header-content { max-width: 42rem; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
+        .main-header-left { display: flex; align-items: center; gap: 0.875rem; }
+        
+        .menu-btn {
+            padding: 0.4375rem; border-radius: 0.5rem;
+            background: transparent; border: none;
+            cursor: pointer; transition: background 0.15s ease;
+        }
+        
+        .menu-btn:hover { background: var(--slate-100); }
+        .menu-btn svg { width: 1.125rem; height: 1.125rem; color: var(--slate-500); }
+        
+        @media (min-width: 1024px) { .menu-btn { display: none; } }
+        
+        .main-title h1 { font-weight: 600; color: var(--slate-800); font-size: 0.9375rem; }
+        .main-title p { font-size: 0.6875rem; color: var(--slate-500); }
+        
+        .form-area { padding: 1.5rem 1.25rem; max-width: 42rem; margin: 0 auto; }
+        
+        .section-header { margin-bottom: 1.5rem; }
+        .section-header-content { display: flex; align-items: center; gap: 0.875rem; }
+        
+        .section-icon {
+            width: 2.75rem; height: 2.75rem;
+            background: var(--primary); border-radius: 0.625rem;
+            display: flex; align-items: center; justify-content: center;
+        }
+        
+        .section-icon svg { width: 1.375rem; height: 1.375rem; color: var(--white); }
+        .section-title h2 { font-size: 1.125rem; font-weight: 600; color: var(--slate-800); }
+        .section-title p { font-size: 0.8125rem; color: var(--slate-500); }
+        
+        /* Form Card */
+        .form-card { background: var(--white); border-radius: 0.625rem; border: 1px solid var(--slate-200); overflow: hidden; }
+        .form-card-body { padding: 1.25rem 1.5rem; }
+        
+        .form-group { margin-bottom: 1.25rem; }
+        .form-group:last-child { margin-bottom: 0; }
+        .form-row { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
+        @media (min-width: 640px) { .form-row { grid-template-columns: repeat(2, 1fr); } }
+        
+        .form-label { display: block; font-size: 0.8125rem; font-weight: 500; color: var(--slate-700); margin-bottom: 0.4375rem; }
+        .form-label .required { color: var(--red); margin-left: 0.125rem; }
+        
+        .form-input, .form-select, .form-textarea {
+            width: 100%; padding: 0.6875rem;
+            border: 1px solid var(--slate-200); border-radius: 0.5rem;
+            font-size: 0.8125rem; transition: all 0.15s ease;
+            outline: none; font-family: inherit;
+        }
+        
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-10);
+        }
+        
+        .form-input.error, .form-select.error { border-color: var(--red); background: var(--red-light); }
+        
+        .form-select {
+            cursor: pointer; appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.25em 1.25em;
+            padding-right: 2.25rem;
+        }
+        
+        .form-textarea { resize: vertical; min-height: 90px; }
+        
+        .error-message {
+            display: flex; align-items: center; gap: 0.25rem;
+            color: var(--red); font-size: 0.6875rem; margin-top: 0.375rem;
+        }
+        
+        .error-message svg { width: 0.6875rem; height: 0.6875rem; }
+        
+        /* Options */
+        .options-group { display: flex; flex-direction: column; gap: 0.4375rem; }
+        
+        .option-item {
+            display: flex; align-items: center; gap: 0.625rem;
+            padding: 0.6875rem; border-radius: 0.5rem;
+            cursor: pointer; transition: all 0.15s ease;
+            border: 1px solid var(--slate-200);
+        }
+        
+        .option-item:hover { border-color: var(--slate-300); background: var(--slate-50); }
+        .option-item.selected { background: var(--primary-light); border-color: var(--primary); }
+        .option-item input { position: absolute; opacity: 0; pointer-events: none; }
+        
+        .option-radio, .option-checkbox {
+            width: 1.125rem; height: 1.125rem;
+            border: 2px solid var(--slate-300);
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.15s ease; flex-shrink: 0;
+        }
+        
+        .option-radio { border-radius: 50%; }
+        .option-checkbox { border-radius: 0.25rem; }
+        
+        .option-item.selected .option-radio,
+        .option-item.selected .option-checkbox { border-color: var(--primary); background: var(--primary); }
+        
+        .option-radio-dot { width: 0.4375rem; height: 0.4375rem; background: var(--white); border-radius: 50%; opacity: 0; }
+        .option-item.selected .option-radio-dot { opacity: 1; }
+        
+        .option-checkbox svg { width: 0.6875rem; height: 0.6875rem; color: var(--white); opacity: 0; }
+        .option-item.selected .option-checkbox svg { opacity: 1; }
+        
+        .option-label { font-size: 0.8125rem; color: var(--slate-600); }
+        .option-item.selected .option-label { color: var(--primary); font-weight: 500; }
+        
+        /* Rating */
+        .rating-scale { margin-bottom: 0.4375rem; }
+        .rating-buttons { display: flex; gap: 0.4375rem; margin-bottom: 0.4375rem; }
+        
+        .rating-btn {
+            flex: 1; padding: 0.6875rem; border-radius: 0.5rem;
+            font-weight: 500; font-size: 0.8125rem;
+            cursor: pointer; transition: all 0.15s ease;
+            border: 1px solid var(--slate-200);
+            background: var(--white); color: var(--slate-500);
+        }
+        
+        .rating-btn:hover { border-color: var(--slate-300); }
+        .rating-btn.selected { background: var(--primary); border-color: var(--primary); color: var(--white); }
+        .rating-btn.filled { background: var(--primary-10); border-color: rgba(11, 59, 92, 0.3); color: var(--primary); }
+        .rating-labels { display: flex; justify-content: space-between; padding: 0 0.25rem; }
+        .rating-labels span { font-size: 0.5625rem; color: var(--slate-400); }
+        
+        /* Summary */
+        .form-summary { background: var(--slate-50); border-radius: 0.5rem; padding: 0.875rem; margin-top: 1.5rem; }
+        .form-summary p { font-size: 0.8125rem; font-weight: 500; color: var(--slate-700); margin-bottom: 0.625rem; }
+        .summary-bars { display: flex; gap: 0.4375rem; }
+        .summary-bar { flex: 1; height: 0.375rem; border-radius: 9999px; background: var(--slate-200); }
+        .summary-bar.complete { background: var(--emerald); }
+        .summary-bar.current { background: var(--primary); }
+        
+        /* Navigation */
+        .form-navigation {
+            padding: 0.875rem 1.5rem;
+            border-top: 1px solid var(--slate-100);
+            background: rgba(248, 250, 252, 0.5);
+            display: flex; justify-content: space-between;
+        }
+        
+        .form-navigation .btn { width: auto; padding: 0.5625rem 1rem; }
+        
+        /* Completion */
+        .completion-screen {
+            min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            padding: 1.25rem; background: var(--slate-50);
+        }
+        
+        .completion-card {
+            max-width: 22rem; width: 100%;
+            background: var(--white); border-radius: 0.875rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            padding: 1.75rem; text-align: center;
+        }
+        
+        .completion-icon {
+            width: 3.5rem; height: 3.5rem;
+            background: var(--emerald-light); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 1.25rem;
+        }
+        
+        .completion-icon svg { width: 1.75rem; height: 1.75rem; color: var(--emerald); }
+        .completion-card h2 { font-size: 1.125rem; font-weight: 600; color: var(--slate-800); margin-bottom: 0.4375rem; }
+        .completion-card p { color: var(--slate-500); font-size: 0.8125rem; margin-bottom: 1.5rem; }
+        
+        @media (max-width: 640px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            .stats-row { flex-direction: column; }
+            .form-card-body { padding: 1rem; }
+            .form-navigation { padding: 0.875rem 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+    
+    <script>
+        const state = {
+            showNotification: true,
+            showInquerito: false,
+            showSidebar: true,
+            currentSection: 1,
+            formData: {},
+            errors: {},
+            isSubmitting: false,
+            isCompleted: false,
+            draftInfo: { lastSaved: null, progress: 0, currentSection: 1 },
+            isSaving: false,
+            showSavedToast: false,
+            hasDraft: false
+        };
+        
+        const sections = [
+            { id: 1, name: "Identificacao", icon: "user", title: "Dados de Identificacao", description: "Informacoes do responsavel" },
+            { id: 2, name: "Documentos", icon: "file-text", title: "Conformidade Documental", description: "Procedimentos documentais" },
+            { id: 3, name: "Controlo", icon: "shield", title: "Controlo Interno", description: "Mecanismos de controlo" },
+            { id: 4, name: "Recursos", icon: "users", title: "Recursos e Capacitacao", description: "Equipa e recursos" },
+            { id: 5, name: "Conclusao", icon: "message-square", title: "Observacoes Finais", description: "Comentarios e sugestoes" },
+        ];
+        
+        const icons = {
+            user: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>`,
+            'file-text': `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>`,
+            shield: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>`,
+            users: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>`,
+            'message-square': `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>`,
+            check: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`,
+            'arrow-left': `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>`,
+            'arrow-right': `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>`,
+            bell: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>`,
+            x: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"/></svg>`,
+            clock: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
+            save: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>`,
+            play: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
+            home: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>`,
+            menu: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16"/></svg>`,
+            refresh: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>`,
+            clipboard: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>`,
+            calendar: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>`,
+            scale: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>`,
+            error: `<svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>`
+        };
+        
+        function getIcon(name) { return icons[name] || ''; }
+        
+        function formatTime(date) {
+            if (!date) return '';
+            return date.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+        }
+        
+        function calculateProgress() {
+            const requiredFields = ['nome', 'cargo', 'departamento', 'email', 'contratos_digitais', 'segregacao', 'arquivamento', 'controlo_eficacia', 'num_colaboradores', 'formacao', 'recursos_tec'];
+            const filledFields = requiredFields.filter(field => state.formData[field] && state.formData[field].toString().trim()).length;
+            return Math.round((filledFields / requiredFields.length) * 100);
+        }
+        
+        function getStepProgress() { return state.isCompleted ? 100 : ((state.currentSection - 1) / sections.length) * 100; }
+        function getLineHeight() { return Math.max(0, ((state.currentSection - 1) / (sections.length - 1)) * 100); }
+        
+        function updateFormData(name, value) {
+            state.formData[name] = value;
+            if (state.errors[name]) delete state.errors[name];
+            render();
+            clearTimeout(window.autoSaveTimeout);
+            window.autoSaveTimeout = setTimeout(saveDraft, 3000);
+        }
+        
+        function saveDraft() {
+            state.isSaving = true;
+            render();
+            setTimeout(() => {
+                state.draftInfo = { lastSaved: new Date(), progress: calculateProgress(), currentSection: state.currentSection };
+                state.hasDraft = true;
+                state.isSaving = false;
+                state.showSavedToast = true;
+                render();
+                setTimeout(() => { state.showSavedToast = false; render(); }, 2000);
+            }, 500);
+        }
+        
+        function validateSection(sectionId) {
+            const newErrors = {};
+            if (sectionId === 1) {
+                if (!state.formData.nome?.toString().trim()) newErrors.nome = "Nome e obrigatorio";
+                if (!state.formData.cargo?.toString().trim()) newErrors.cargo = "Cargo e obrigatorio";
+                if (!state.formData.departamento?.toString().trim()) newErrors.departamento = "Selecione um departamento";
+                if (!state.formData.email?.toString().trim()) newErrors.email = "Email e obrigatorio";
+                else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.formData.email.toString())) newErrors.email = "Email invalido";
+            }
+            if (sectionId === 2) {
+                if (!state.formData.contratos_digitais) newErrors.contratos_digitais = "Selecione uma opcao";
+                if (!state.formData.segregacao) newErrors.segregacao = "Selecione uma opcao";
+                if (!state.formData.arquivamento) newErrors.arquivamento = "Selecione uma opcao";
+            }
+            if (sectionId === 3) { if (!state.formData.controlo_eficacia) newErrors.controlo_eficacia = "Selecione uma classificacao"; }
+            if (sectionId === 4) {
+                if (!state.formData.num_colaboradores?.toString().trim()) newErrors.num_colaboradores = "Numero de colaboradores e obrigatorio";
+                if (!state.formData.formacao) newErrors.formacao = "Selecione uma opcao";
+                if (!state.formData.recursos_tec) newErrors.recursos_tec = "Selecione uma classificacao";
+            }
+            state.errors = newErrors;
+            render();
+            return Object.keys(newErrors).length === 0;
+        }
+        
+        function nextSection() {
+            if (validateSection(state.currentSection) && state.currentSection < sections.length) {
+                state.currentSection++;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                render();
+            }
+        }
+        
+        function prevSection() {
+            if (state.currentSection > 1) {
+                state.currentSection--;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                render();
+            }
+        }
+        
+        function goToSection(sectionId) { if (sectionId <= state.currentSection) { state.currentSection = sectionId; render(); } }
+        
+        function handleSubmit() {
+            if (validateSection(state.currentSection)) {
+                state.isSubmitting = true;
+                render();
+                setTimeout(() => { state.isSubmitting = false; state.isCompleted = true; state.hasDraft = false; render(); }, 2000);
+            }
+        }
+        
+        function resetForm() {
+            state.formData = {};
+            state.errors = {};
+            state.currentSection = 1;
+            state.isCompleted = false;
+            state.hasDraft = false;
+            state.draftInfo = { lastSaved: null, progress: 0, currentSection: 1 };
+        }
+        
+        function discardDraft() { resetForm(); state.showInquerito = false; state.showNotification = true; render(); }
+        function startInquerito(useDraft) { state.showNotification = false; state.showInquerito = true; if (!useDraft) resetForm(); render(); }
+        function postponeInquerito() { state.showNotification = false; render(); }
+        function toggleSidebar() { state.showSidebar = !state.showSidebar; render(); }
+        function showNotificationModal() { state.showNotification = true; render(); }
+        function goHome() { resetForm(); state.showInquerito = false; render(); }
+        function toggleCheckbox(name, optValue) {
+            const current = state.formData[name] || [];
+            state.formData[name] = current.includes(optValue) ? current.filter(v => v !== optValue) : [...current, optValue];
+            render();
+        }
+        
+        function renderNotificationModal() {
+            if (!state.showNotification) return '';
+            return `
+                <div class="modal-overlay animate-fade-in">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <div class="modal-icon">${getIcon('bell')}</div>
+                            <div class="modal-title-group">
+                                <small>Notificacao</small>
+                                <h2>Inquerito Pendente</h2>
+                            </div>
+                        </div>
+                        <div class="modal-body">
+                            <div class="inquiry-info">
+                                ${getIcon('clipboard')}
+                                <div><h3>Inquerito de Conformidade Institucional</h3><p>Avaliacao dos processos internos</p></div>
+                            </div>
+                            <div class="stats-row">
+                                <div class="stat-item">${getIcon('clock')}<p class="label">Duracao</p><p class="value">15-20 min</p></div>
+                                <div class="stat-item">${getIcon('calendar')}<p class="label">Prazo</p><p class="value">30 Abril</p></div>
+                            </div>
+                            ${state.hasDraft ? `<div class="draft-notice">${getIcon('save')}<p>Rascunho guardado (${state.draftInfo.progress}%)</p></div>` : ''}
+                            <div class="modal-actions">
+                                ${state.hasDraft ? `
+                                    <button class="btn btn-primary" onclick="startInquerito(true)">${getIcon('play')} Continuar Rascunho</button>
+                                    <button class="btn btn-secondary" onclick="startInquerito(false)">${getIcon('refresh')} Comecar Novo</button>
+                                ` : `<button class="btn btn-primary" onclick="startInquerito(false)">${getIcon('play')} Preencher Agora</button>`}
+                                <button class="btn btn-ghost" onclick="postponeInquerito()">Preencher Mais Tarde</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+        }
+        
+        function renderLoadingOverlay() { return state.isSubmitting ? `<div class="loading-overlay"><div class="spinner"></div><p class="loading-text">A submeter inquerito...</p></div>` : ''; }
+        function renderToast() { return state.showSavedToast ? `<div class="toast animate-slide-up">${getIcon('check')} Guardado automaticamente</div>` : ''; }
+        
+        function renderDashboard() {
+            if (state.showInquerito || state.showNotification) return '';
+            return `
+                <div>
+                    <header class="dashboard-header">
+                        <div class="dashboard-header-content">
+                            <div class="logo-group">
+                                <div class="logo-icon">${getIcon('scale')}</div>
+                                <div class="logo-text"><h1>Tribunal de Contas</h1><p>Portal do Colaborador</p></div>
+                            </div>
+                            <button class="notification-btn" onclick="showNotificationModal()">${getIcon('bell')}<span class="notification-badge"></span></button>
+                        </div>
+                    </header>
+                    <main class="dashboard-main">
+                        <div class="welcome-section"><h2>Bem-vindo de volta</h2><p>Gerir os seus inqueritos pendentes</p></div>
+                        <div class="stats-grid">
+                            <div class="stat-card"><div class="stat-card-header"><div class="stat-card-icon amber">${getIcon('clock')}</div><span class="stat-card-value">1</span></div><p class="stat-card-label">Pendentes</p></div>
+                            <div class="stat-card"><div class="stat-card-header"><div class="stat-card-icon blue">${getIcon('save')}</div><span class="stat-card-value">${state.hasDraft ? 1 : 0}</span></div><p class="stat-card-label">Rascunhos</p></div>
+                            <div class="stat-card"><div class="stat-card-header"><div class="stat-card-icon emerald">${getIcon('check')}</div><span class="stat-card-value">0</span></div><p class="stat-card-label">Concluidos</p></div>
+                        </div>
+                        <div class="inquiries-card">
+                            <div class="inquiries-header"><h3>Inqueritos Disponiveis</h3></div>
+                            <div class="inquiries-list">
+                                <div class="inquiry-item" onclick="showNotificationModal()">
+                                    <div class="inquiry-item-content">
+                                        <div class="inquiry-item-left">
+                                            <div class="inquiry-item-icon">${getIcon('clipboard')}</div>
+                                            <div class="inquiry-item-info">
+                                                <h4>Inquerito de Conformidade Institucional</h4>
+                                                <div class="inquiry-item-meta">
+                                                    <span>${getIcon('clock')} 15-20 min</span>
+                                                    <span>${getIcon('calendar')} Prazo: 30 Abril</span>
+                                                    ${state.hasDraft ? `<span class="draft-badge">Rascunho ${state.draftInfo.progress}%</span>` : ''}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="inquiry-item-arrow">${getIcon('arrow-right')}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+                </div>`;
+        }
+        
+        function renderSidebar() {
+            const lineHeight = getLineHeight();
+            const progress = getStepProgress();
+            return `
+                <aside class="sidebar ${!state.showSidebar ? 'hidden-mobile' : ''}">
+                    <div class="sidebar-header"><div class="sidebar-logo"><div class="sidebar-logo-icon">${getIcon('scale')}</div><div class="sidebar-logo-text"><p>Tribunal de Contas</p><span>Republica de Angola</span></div></div></div>
+                    <div class="sidebar-progress">
+                        <div class="progress-header"><span class="progress-label">Progresso</span><span class="progress-value">${Math.round(progress)}%</span></div>
+                        <div class="progress-bar"><div class="progress-fill" style="width: ${progress}%"></div></div>
+                    </div>
+                    <div class="sidebar-steps">
+                        <p class="steps-title">Seccoes</p>
+                        <div class="steps-container">
+                            <div class="steps-line"></div>
+                            <div class="steps-line-progress" style="height: ${lineHeight}%"></div>
+                            ${sections.map(section => {
+                                const isActive = section.id === state.currentSection;
+                                const isComplete = section.id < state.currentSection;
+                                const isClickable = section.id <= state.currentSection;
+                                return `<button class="step-item ${isActive ? 'active' : ''} ${isComplete ? 'complete' : ''} ${!isClickable ? 'disabled' : ''}" onclick="${isClickable ? `goToSection(${section.id})` : ''}" ${!isClickable ? 'disabled' : ''}>
+                                    <div class="step-number ${isActive ? 'active' : isComplete ? 'complete' : 'pending'}">${isComplete ? getIcon('check') : section.id}</div>
+                                    <div class="step-info"><p class="step-name ${isActive ? 'active' : isComplete ? 'complete' : 'pending'}">${section.name}</p><p class="step-description">${section.description}</p></div>
+                                    ${isActive ? '<div class="step-indicator"></div>' : ''}
+                                </button>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                    <div class="sidebar-footer">
+                        <div class="save-status">
+                            ${state.isSaving ? `<span class="save-status-content"><div class="spinner spinner-sm"></div> A guardar...</span>` : state.draftInfo.lastSaved ? `<span class="save-status-content"><svg class="success">${getIcon('check')}</svg> Guardado as ${formatTime(state.draftInfo.lastSaved)}</span>` : `<span>Auto-save activo</span>`}
+                        </div>
+                        <div class="footer-buttons">
+                            <button class="btn btn-secondary" style="flex: 1" onclick="saveDraft()">${getIcon('save')} Guardar</button>
+                            <button class="btn-discard" onclick="discardDraft()">${getIcon('x')}</button>
+                        </div>
+                    </div>
+                </aside>
+                ${state.showSidebar ? `<div class="sidebar-overlay" onclick="toggleSidebar()"></div>` : ''}`;
+        }
+        
+        function renderFormField(name, label, type, required, opts = {}) {
+            const error = state.errors[name];
+            const value = state.formData[name] || '';
+            let input = '';
+            if (['text', 'email', 'tel', 'number', 'date'].includes(type)) {
+                input = `<input type="${type}" class="form-input ${error ? 'error' : ''}" value="${value}" placeholder="${opts.placeholder || ''}" ${opts.min ? `min="${opts.min}"` : ''} onchange="updateFormData('${name}', this.value)" oninput="updateFormData('${name}', this.value)"/>`;
+            } else if (type === 'select') {
+                input = `<select class="form-select ${error ? 'error' : ''}" onchange="updateFormData('${name}', this.value)"><option value="">Selecione</option>${opts.options.map(opt => `<option value="${opt.value}" ${value === opt.value ? 'selected' : ''}>${opt.label}</option>`).join('')}</select>`;
+            } else if (type === 'textarea') {
+                input = `<textarea class="form-textarea" rows="${opts.rows || 4}" placeholder="${opts.placeholder || ''}" onchange="updateFormData('${name}', this.value)" oninput="updateFormData('${name}', this.value)">${value}</textarea>`;
+            }
+            return `<div class="form-group"><label class="form-label">${label}${required ? '<span class="required">*</span>' : ''}</label>${input}${error ? `<p class="error-message">${getIcon('error')} ${error}</p>` : ''}</div>`;
+        }
+        
+        function renderRadioGroup(name, label, radioOptions, required) {
+            const error = state.errors[name];
+            const value = state.formData[name] || '';
+            return `<div class="form-group"><label class="form-label">${label}${required ? '<span class="required">*</span>' : ''}</label>
+                <div class="options-group">${radioOptions.map(opt => `<label class="option-item ${value === opt.value ? 'selected' : ''}" onclick="updateFormData('${name}', '${opt.value}')"><input type="radio" name="${name}" value="${opt.value}" ${value === opt.value ? 'checked' : ''}/><div class="option-radio"><div class="option-radio-dot"></div></div><span class="option-label">${opt.label}</span></label>`).join('')}</div>
+                ${error ? `<p class="error-message">${getIcon('error')} ${error}</p>` : ''}</div>`;
+        }
+        
+        function renderCheckboxGroup(name, label, checkOptions) {
+            const value = state.formData[name] || [];
+            return `<div class="form-group"><label class="form-label">${label}</label>
+                <div class="options-group">${checkOptions.map(opt => `<label class="option-item ${value.includes(opt.value) ? 'selected' : ''}" onclick="toggleCheckbox('${name}', '${opt.value}')"><input type="checkbox" name="${name}" value="${opt.value}" ${value.includes(opt.value) ? 'checked' : ''}/><div class="option-checkbox">${getIcon('check')}</div><span class="option-label">${opt.label}</span></label>`).join('')}</div></div>`;
+        }
+        
+        function renderRatingScale(name, label, required) {
+            const error = state.errors[name];
+            const value = parseInt(state.formData[name]) || 0;
+            const labels = ["Muito fraco", "Fraco", "Razoavel", "Bom", "Excelente"];
+            return `<div class="form-group"><label class="form-label">${label}${required ? '<span class="required">*</span>' : ''}</label>
+                <div class="rating-scale"><div class="rating-buttons">${[1,2,3,4,5].map(n => `<button type="button" class="rating-btn ${value === n ? 'selected' : n < value ? 'filled' : ''}" onclick="updateFormData('${name}', '${n}')">${n}</button>`).join('')}</div><div class="rating-labels"><span>${labels[0]}</span><span>${labels[4]}</span></div></div>
+                ${error ? `<p class="error-message">${getIcon('error')} ${error}</p>` : ''}</div>`;
+        }
+        
+        function renderSection1() {
+            return `<div class="form-row">${renderFormField('nome', 'Nome completo', 'text', true, { placeholder: 'Digite seu nome' })}${renderFormField('cargo', 'Cargo / Funcao', 'text', true, { placeholder: 'Ex: Director Financeiro' })}</div>
+                <div class="form-row">${renderFormField('departamento', 'Departamento', 'select', true, { options: [{ value: 'financeiro', label: 'Financeiro' }, { value: 'compras', label: 'Compras' }, { value: 'juridico', label: 'Juridico' }, { value: 'auditoria', label: 'Auditoria' }, { value: 'rh', label: 'Recursos Humanos' }] })}${renderFormField('email', 'Email institucional', 'email', true, { placeholder: 'seu.email@instituicao.gov.ao' })}</div>
+                ${renderFormField('telefone', 'Telefone de contacto', 'tel', false, { placeholder: '+244 XXX XXX XXX' })}`;
+        }
+        
+        function renderSection2() {
+            return `${renderRadioGroup('contratos_digitais', 'Os contratos estao assinados digitalmente?', [{ value: 'sim_todos', label: 'Sim, todos os contratos' }, { value: 'parcialmente', label: 'Parcialmente (alguns contratos)' }, { value: 'nao', label: 'Nao, nenhum contrato' }], true)}
+                ${renderRadioGroup('segregacao', 'Existe segregacao de funcoes nos processos?', [{ value: 'sim', label: 'Sim, totalmente implementada' }, { value: 'parcial', label: 'Parcialmente implementada' }, { value: 'nao', label: 'Nao existe segregacao' }], true)}
+                ${renderRadioGroup('arquivamento', 'Os documentos sao arquivados de forma organizada?', [{ value: 'digital', label: 'Sim, arquivo digital organizado' }, { value: 'fisico', label: 'Sim, arquivo fisico organizado' }, { value: 'ambos', label: 'Sim, ambos (digital e fisico)' }, { value: 'nao', label: 'Nao ha sistema de arquivamento' }], true)}`;
+        }
+        
+        function renderSection3() {
+            return `${renderRatingScale('controlo_eficacia', 'Como avalia a eficacia do sistema de controlo interno?', true)}
+                ${renderCheckboxGroup('mecanismos', 'Quais mecanismos de controlo existem?', [{ value: 'aprovacoes', label: 'Sistema de aprovacoes hierarquicas' }, { value: 'auditorias', label: 'Auditorias internas periodicas' }, { value: 'relatorios', label: 'Relatorios de gestao regulares' }, { value: 'politicas', label: 'Politicas e procedimentos documentados' }, { value: 'sistemas', label: 'Sistemas informatizados de controlo' }])}
+                ${renderFormField('data_auditoria', 'Data da ultima auditoria interna', 'date', false)}`;
+        }
+        
+        function renderSection4() {
+            return `<div class="form-row">${renderFormField('num_colaboradores', 'Numero de colaboradores', 'number', true, { placeholder: 'Ex: 15', min: '1' })}${renderFormField('orcamento', 'Orcamento anual', 'text', false, { placeholder: 'Ex: 50.000.000 AOA' })}</div>
+                ${renderRadioGroup('formacao', 'A equipa recebe formacao regular?', [{ value: 'sim_regular', label: 'Sim, formacao regular (trimestral ou mais)' }, { value: 'sim_anual', label: 'Sim, formacao anual' }, { value: 'raramente', label: 'Raramente (menos de uma vez por ano)' }, { value: 'nao', label: 'Nao ha programa de formacao' }], true)}
+                ${renderRatingScale('recursos_tec', 'Os recursos tecnologicos sao adequados?', true)}`;
+        }
+        
+        function renderSection5() {
+            return `${renderFormField('desafios', 'Principais desafios enfrentados', 'textarea', false, { placeholder: 'Descreva os principais desafios...', rows: 4 })}
+                ${renderFormField('sugestoes', 'Sugestoes de melhoria', 'textarea', false, { placeholder: 'Apresente sugestoes...', rows: 4 })}
+                ${renderFormField('observacoes', 'Observacoes adicionais', 'textarea', false, { placeholder: 'Informacoes adicionais relevantes...', rows: 4 })}
+                <div class="form-summary"><p>Resumo do preenchimento</p><div class="summary-bars">${sections.map(s => `<div class="summary-bar ${s.id < state.currentSection ? 'complete' : s.id === state.currentSection ? 'current' : ''}"></div>`).join('')}</div></div>`;
+        }
+        
+        function renderInquerito() {
+            if (!state.showInquerito || state.isCompleted) return '';
+            const currentSectionData = sections[state.currentSection - 1];
+            let sectionContent = '';
+            switch (state.currentSection) {
+                case 1: sectionContent = renderSection1(); break;
+                case 2: sectionContent = renderSection2(); break;
+                case 3: sectionContent = renderSection3(); break;
+                case 4: sectionContent = renderSection4(); break;
+                case 5: sectionContent = renderSection5(); break;
+            }
+            return `<div class="app-layout">${renderSidebar()}
+                <main class="main-content">
+                    <header class="main-header"><div class="main-header-content"><div class="main-header-left"><button class="menu-btn" onclick="toggleSidebar()">${getIcon('menu')}</button><div class="main-title"><h1>Inquerito de Conformidade</h1><p>Seccao ${state.currentSection} de ${sections.length}</p></div></div></div></header>
+                    <div class="form-area">
+                        <div class="section-header"><div class="section-header-content"><div class="section-icon">${getIcon(currentSectionData.icon)}</div><div class="section-title"><h2>${currentSectionData.title}</h2><p>${currentSectionData.description}</p></div></div></div>
+                        <div class="form-card"><div class="form-card-body">${sectionContent}</div>
+                            <div class="form-navigation">
+                                <button class="btn btn-secondary btn-inline" onclick="prevSection()" ${state.currentSection === 1 ? 'disabled' : ''}>${getIcon('arrow-left')} Anterior</button>
+                                ${state.currentSection < sections.length ? `<button class="btn btn-primary btn-inline" onclick="nextSection()">Proxima ${getIcon('arrow-right')}</button>` : `<button class="btn btn-success btn-inline" onclick="handleSubmit()">${getIcon('check')} Submeter</button>`}
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>`;
+        }
+        
+        function renderCompletion() {
+            if (!state.isCompleted) return '';
+            return `<div class="completion-screen"><div class="completion-card animate-slide-up"><div class="completion-icon">${getIcon('check')}</div><h2>Inquerito Submetido</h2><p>Agradecemos a sua participacao. As suas respostas foram registadas com sucesso.</p><button class="btn btn-primary" onclick="goHome()">${getIcon('home')} Voltar ao Inicio</button></div></div>`;
+        }
+        
+        function render() {
+            document.getElementById('app').innerHTML = `${renderNotificationModal()}${renderLoadingOverlay()}${renderToast()}${renderDashboard()}${renderInquerito()}${renderCompletion()}`;
+        }
+        
+        render();
+    </script>
+</body>
+</html>

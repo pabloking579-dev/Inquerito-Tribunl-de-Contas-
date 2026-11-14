@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inquérito de Conformidade - Tribunal de Contas</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        :root {
+            --primary: #0b3b5c;
+            --primary-dark: #0a3550;
+            --primary-light: rgba(11, 59, 92, 0.05);
+            --emerald: #10b981;
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-500: #64748b;
+            --slate-800: #1e293b;
+            --white: #ffffff;
+            --glass: rgba(255, 255, 255, 0.85);
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: radial-gradient(at top left, #f8fafc 0%, #cbd5e1 100%);
+            background-attachment: fixed;
+            color: var(--slate-800);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* HEADER GLASSMORPHISM COM TÍTULO E STEPS */
+        .app-header {
+            background: var(--glass);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-bottom: 1px solid rgba(11, 59, 92, 0.1);
+            padding: 1.5rem 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.2rem;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
+        }
+
+        .inquerito-title {
+            color: var(--primary);
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin: 0;
+        }
+
+        /* STEPS CENTRALIZADOS */
+        .steps-horizontal {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 650px;
+        }
+
+        .step-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            position: relative;
+        }
+
+        .step-circle {
+            width: 2.4rem;
+            height: 2.4rem;
+            border-radius: 12px;
+            background: var(--white);
+            border: 1px solid var(--slate-200);
+            color: var(--slate-500);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            z-index: 2;
+            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .step-item.active .step-circle {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 8px 15px rgba(11, 59, 92, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .step-item.complete .step-circle {
+            background: var(--emerald);
+            border-color: var(--emerald);
+            color: white;
+        }
+
+        .step-line {
+            position: absolute;
+            top: 1.2rem;
+            left: 50%;
+            width: 100%;
+            height: 2px;
+            background: var(--slate-200);
+            z-index: 1;
+        }
+
+        .step-label {
+            margin-top: 0.5rem;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--slate-500);
+            text-transform: uppercase;
+        }
+
+        /* CONTEÚDO PRINCIPAL */
+        .main-container {
+            max-width: 850px;
+            margin: 2.5rem auto;
+            padding: 0 1.5rem 6rem;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-card {
+            background: var(--white);
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .card-body { padding: 3rem; min-height: 400px; }
+
+        /* PAINEL DE RESUMO (DIREITO) */
+        .side-summary {
+            position: fixed;
+            right: -320px;
+            top: 0;
+            width: 300px;
+            height: 100vh;
+            background: var(--white);
+            z-index: 1000;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.05);
+            transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 2.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .side-summary.open { right: 0; }
+
+        .summary-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .summary-item {
+            padding: 1.2rem;
+            border-radius: 12px;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            color: var(--slate-500);
+            transition: 0.3s;
+        }
+
+        .summary-item.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+        .summary-item.done { color: var(--emerald); }
+
+        /* BOTÕES FLUTUANTES */
+        .summary-trigger {
+            position: fixed;
+            right: 2rem;
+            bottom: 6rem; /* Acima do botão guardar */
+            background: var(--white);
+            color: var(--primary);
+            padding: 0.8rem 1.4rem;
+            border-radius: 50px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            font-weight: 700;
+            z-index: 500;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+            border: 1px solid var(--slate-200);
+            transition: 0.3s;
+        }
+
+        .summary-trigger:hover { transform: translateY(-3px); background: var(--slate-50); }
+
+        .btn-save-inquerito {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            padding: 1.1rem 2.2rem;
+            border-radius: 50px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            box-shadow: 0 10px 25px rgba(11, 59, 92, 0.3);
+            transition: 0.4s;
+            z-index: 500;
+        }
+
+        .btn-save-inquerito:hover { transform: scale(1.05) translateY(-5px); box-shadow: 0 15px 35px rgba(11, 59, 92, 0.4); }
+
+        /* MODAL DE NOTIFICAÇÃO */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(8px);
+            z-index: 2000;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--white);
+            border-radius: 28px;
+            width: 90%;
+            max-width: 380px;
+            padding: 2.5rem;
+            text-align: center;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script>
+        const state = {
+            isModalOpen: true,
+            isSummaryOpen: false,
+            currentStep: 1,
+            title: "Inquérito de Conformidade Institucional",
+            stepsDone: [1]
+        };
+
+        const steps = ["Identificação", "Documentação", "Processos", "Recursos", "Submissão"];
+
+        function render() {
+            const app = document.getElementById('app');
+            
+            app.innerHTML = `
+                ${state.isModalOpen ? `
+                <div class="modal-overlay">
+                    <div class="modal-content">
+                        <div style="background: var(--primary-light); width: 64px; height: 64px; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+                            <i class="fas fa-file-invoice" style="color: var(--primary); font-size: 1.6rem;"></i>
+                        </div>
+                        <h2 style="color: var(--primary); margin-bottom: 0.8rem;">Novo Inquérito</h2>
+                        <p style="color: var(--slate-500); font-size: 0.95rem; margin-bottom: 2rem;">Foi designado para preencher a avaliação de conformidade do trimestre.</p>
+                        <button class="btn-save-inquerito" style="position: static; width: 100%; justify-content: center;" onclick="state.isModalOpen = false; render()">Começar Agora</button>
+                    </div>
+                </div>` : ''}
+
+                <header class="app-header">
+                    <h1 class="inquerito-title">${state.title}</h1>
+                    <div class="steps-horizontal">
+                        ${steps.map((s, i) => `
+                            <div class="step-item ${state.currentStep === i+1 ? 'active' : state.currentStep > i+1 ? 'complete' : ''}">
+                                <div class="step-circle">${state.currentStep > i+1 ? '✓' : i+1}</div>
+                                <span class="step-label">${s.split(' ')[0]}</span>
+                                ${i < steps.length - 1 ? '<div class="step-line"></div>' : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                </header>
+
+                <div class="side-summary ${state.isSummaryOpen ? 'open' : ''}">
+                    <div class="summary-header">
+                        <h3 style="color: var(--primary);">Resumo</h3>
+                        <i class="fas fa-times" style="cursor:pointer" onclick="state.isSummaryOpen = false; render()"></i>
+                    </div>
+                    <div style="flex:1">
+                        ${steps.map((s, i) => `
+                            <div class="summary-item ${state.currentStep === i+1 ? 'active' : ''} ${state.stepsDone.includes(i+1) ? 'done' : ''}">
+                                <span>${i+1}. ${s}</span>
+                                <span>${state.stepsDone.includes(i+1) ? '✓' : ''}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="summary-trigger" onclick="state.isSummaryOpen = true; render()">
+                    <i class="fas fa-tasks"></i> Progresso
+                </div>
+
+                <button class="btn-save-inquerito" onclick="alert('Inquérito Guardado!')">
+                    <i class="fas fa-save"></i> Guardar Inquérito
+                </button>
+
+                <main class="main-container">
+                    <div class="form-card">
+                        <div class="card-body">
+                            <span style="color: var(--primary); font-weight: 800; font-size: 0.8rem; text-transform: uppercase;">Secção 0${state.currentStep}</span>
+                            <h2 style="font-size: 2.2rem; margin-top: 0.5rem; margin-bottom: 2rem;">${steps[state.currentStep-1]}</h2>
+                            
+                            <div style="background: var(--slate-50); border: 2px dashed var(--slate-200); height: 250px; border-radius: 16px; display: flex; align-items: center; justify-content: center; color: var(--slate-400);">
+                                <p>Área de formulário dinâmico...</p>
+                            </div>
+                        </div>
+                        <div style="padding: 2rem 3rem; background: var(--slate-50); display: flex; justify-content: space-between; align-items: center;">
+                            <button onclick="changeStep(-1)" style="background: none; border: none; color: var(--slate-500); cursor: pointer; font-weight: 700; visibility: ${state.currentStep === 1 ? 'hidden' : 'visible'}">
+                                <i class="fas fa-arrow-left"></i> Anterior
+                            </button>
+                            <button class="btn-save-inquerito" style="position: static; padding: 0.9rem 2.8rem;" onclick="changeStep(1)">
+                                ${state.currentStep === 5 ? 'Finalizar' : 'Próximo Passo'}
+                            </button>
+                        </div>
+                    </div>
+                </main>
+            `;
+        }
+
+        function changeStep(dir) {
+            const next = state.currentStep + dir;
+            if(next >= 1 && next <= 5) {
+                state.currentStep = next;
+                if(!state.stepsDone.includes(next)) state.stepsDone.push(next);
+                render();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        render();
+    </script>
+</body>
+</html>
